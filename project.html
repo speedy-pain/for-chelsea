@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🖤</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            height: 100dvh;
+            overscroll-behavior-y: contain;
+        }
+
+        /* Скрываем полосы прокрутки */
+        .feed::-webkit-scrollbar,
+        .carousel::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* СНЕГ НА ФОНЕ */
+        #snow-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        /* 1. ЭКРАН ВХОДА */
+        #start-gate {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #22002e 0%, #000000 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .gate-title {
+            font-size: 13px;
+            letter-spacing: 4px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .gate-subtitle {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ff0055;
+            text-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+            margin-bottom: 30px;
+            font-family: 'Georgia', serif;
+            font-style: italic;
+        }
+
+        .gate-btn {
+            background: linear-gradient(45deg, #ff0055, #7928ca);
+            color: #fff;
+            padding: 16px 40px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .gate-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 2. ПЛЕЕР СВЕРХУ */
+        .player-bar {
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(15, 15, 20, 0.78);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 14px;
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            width: 92%;
+            max-width: 380px;
+        }
+
+        .playlist-tabs {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tab-btn {
+            background: #222;
+            color: #999;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .tab-btn.active {
+            background: #ff0055;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 4px;
+        }
+
+        .track-info {
+            font-size: 12px;
+            font-weight: 500;
+            color: #eee;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 170px;
+        }
+
+        .btn-action {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        /* 3. ВЕРТИКАЛЬНАЯ ЛЕНТА */
+        .feed {
+            height: 100dvh;
+            width: 100vw;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+        }
+
+        .card {
+            height: 100dvh;
+            width: 100vw;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            position: relative;
+            overflow: hidden;
+            background: #08080c;
+        }
+
+        /* 4. ГОРИЗОНТАЛЬНАЯ КАРУСЕЛЬ ВНУТРИ КАРТОЧКИ */
+        .carousel {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .carousel-slide {
+            flex: 0 0 100%;
+            width: 100%;
+            height: 100%;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Безопасные отступы: сверху от плеера, снизу от текста, по бокам чуть-чуть */
+            padding: 96px 14px 128px 14px;
+        }
+
+        .blur-bg {
+            position: absolute;
+            inset: -24px;
+            background-size: cover;
+            background-position: center;
+            filter: blur(22px) brightness(0.42);
+            z-index: 0;
+        }
+
+        .carousel-slide img {
+            position: relative;
+            z-index: 1;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 14px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75);
+            pointer-events: none;
+        }
+
+        /* Градиент снизу под текст */
+        .card-gradient {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.88) 100%);
+        }
+
+        /* Счетчик фото и точки карусели */
+        .carousel-counter {
+            position: absolute;
+            top: 94px;
+            right: 16px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #eee;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .carousel-dots {
+            position: absolute;
+            bottom: 108px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: flex;
+            gap: 6px;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 12px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.35);
+            transition: all 0.25s;
+        }
+
+        .dot.active {
+            background: #ff0055;
+            width: 16px;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.8);
+        }
+
+        /* Кнопки-стрелки для удобного теста на ПК (работают и на телефоне) */
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 20;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(0, 0, 0, 0.45);
+            color: #fff;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .nav-arrow:active {
+            transform: translateY(-50%) scale(0.9);
+        }
+
+        .nav-arrow.prev { left: 10px; }
+        .nav-arrow.next { right: 10px; }
+
+        /* 5. ПОДПИСЬ И САЙДБАР */
+        .post-info {
+            position: absolute;
+            bottom: max(28px, env(safe-area-inset-bottom));
+            left: 16px;
+            right: 78px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .post-author {
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 6px;
+            color: #ff2e74;
+            text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+        }
+
+        .post-text {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #f5f5f5;
+            text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+        }
+
+        .sidebar {
+            position: absolute;
+            bottom: max(28px, env(safe-area-inset-bottom));
+            right: 12px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .sidebar-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .icon-circle {
+            width: 44px;
+            height: 44px;
+            background: rgba(25, 25, 32, 0.72);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            margin-bottom: 3px;
+            transition: transform 0.15s;
+        }
+
+        .sidebar-btn:active .icon-circle {
+            transform: scale(1.25);
+        }
+
+        .btn-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #ddd;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        }
+
+        .vinyl-disc {
+            width: 44px;
+            height: 44px;
+            background: radial-gradient(circle, #333 20%, #111 60%, #000 100%);
+            border: 2px solid rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            animation: spin 3.5s linear infinite;
+        }
+
+        .paused {
+            animation-play-state: paused;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .floating-heart {
+            position: fixed;
+            pointer-events: none;
+            color: #ff0055;
+            font-size: 80px;
+            animation: heart-pop 0.8s ease-out forwards;
+            z-index: 999;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes heart-pop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.9; }
+            100% { transform: translate(-50%, -100%) scale(1) rotate(15deg); opacity: 0; }
+        }
+        .video-slide {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 96px 14px 128px 14px;
+            background: radial-gradient(circle at center, #1a0b24 0%, #050508 100%);
+        }
+
+        .video-slide video {
+            position: relative;
+            z-index: 3;
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 14px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8);
+            background: #000;
+            outline: none;
+            cursor: pointer;
+        }
+        .video-play-btn {
+            position: absolute;
+            z-index: 25;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            font-size: 26px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .video-play-btn.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="snow-canvas"></canvas>
+
+    <!-- 1. Экран входа -->
+    <div id="start-gate">
+        <div class="gate-title">SPECIAL FOR YOU • 05.12</div>
+        <div class="gate-subtitle">Челси</div>
+        <button class="gate-btn" onclick="unlockSite()">Take my heart! 🖤</button>
+    </div>
+
+    <!-- 2. Аудиоплеер сверху -->
+    <div class="player-bar">
+        <div class="playlist-tabs">
+            <button class="tab-btn active" id="tab-chill" onclick="setPlaylist('chill')">Моя музыка</button>
+            <button class="tab-btn" id="tab-fav" onclick="setPlaylist('fav')">Твои любимые треки</button>
+        </div>
+        <div class="controls-row">
+            <span class="track-info" id="track-title">Нажми Take my heart</span>
+            <div>
+                <button class="btn-action" onclick="prevTrack()">⏮</button>
+                <button class="btn-action" onclick="togglePlay()" id="btn-play">⏸</button>
+                <button class="btn-action" onclick="nextTrack()">⏭</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audio"></audio>
+
+    <!-- 3. Лента генерируется автоматически из списка slides ниже -->
+    <div class="feed" id="feed"></div>
+
+    <script>
+        // ==========================================
+        // 1. ТВОИ СЛАЙДЫ (ПРОСТО ДОБАВЛЯЙ СЮДА!)
+        // ==========================================
+        // В каждый слайд можно вставить сколько угодно фото (1, 3, 5, 10...) —
+        // если фоток больше 1, автоматически появится свайп влево/вправо и точки!
+        const slides = [
+            {
+                author: "@твой_никита",
+                text: "здесь я собрал наши с тобой сообщения,кстати,с днем рождения!)",
+                likes: 1337,
+                photos: [
+                    // Сюда вставляешь свои файлы по 1 фото, например: "images/msg/1.jpg"
+                    "project/messages/d.png",
+                    "project/messages/d1.png",
+                    "project/messages/d2.png",
+                    "project/messages/d3.png",
+                    "project/messages/d4.png",
+                    "project/messages/d5.png",
+                    "project/messages/d6.png",
+                    "project/messages/d7.png",
+                    "project/messages/d8.png",
+                    "project/messages/d9.png",
+                    "project/messages/d10.png",
+                    "project/messages/d11.png",
+                    "project/messages/d12.png",
+                    "project/messages/d13.png",
+                    "project/messages/d14.png",
+                    "project/messages/d15.png",
+                    "project/messages/d16.png",
+                ]
+            },
+            {
+                author: "@ники_зая_из_рая",
+                text: "теперь - наши с тобой рисунки)",
+                likes: 9999,
+                photos: [
+                    "project/drawings/c.png",
+                    "project/drawings/c0.png",
+                    "project/drawings/c1.png",
+                    "project/drawings/c2.png",
+                    "project/drawings/c3.png",
+                    "project/drawings/c4.png",
+                    "project/drawings/c5.png",
+                    "project/drawings/c6.png",
+                    "project/drawings/c7.png",
+                    "project/drawings/c8.png",
+                    "project/drawings/c9.png",
+                    "project/drawings/c10.png",
+                    "project/drawings/c11.png",
+                    "project/drawings/c12.png",
+                    "project/drawings/c13.png",
+                    "project/drawings/c14.png",
+                    "project/drawings/c15.png",
+                ]
+            },
+            {
+                author: "@speedy_pain",
+                text: "помнишь,ты спрашивала,какие мои любимые фотки? так вот,на самом деле,все фотки что ты мне присылаешь - я безумно люблю.",
+                likes: 512,
+                photos: [
+                    "project/pictures/e.jfif",
+                    "project/pictures/e2.jfif",
+                    "project/pictures/e3.jfif",
+                    "project/pictures/e4.jfif",
+                    "project/pictures/e5.jfif",
+                    "project/pictures/e7.jfif",
+                    "project/pictures/e8.jfif",
+                    "project/pictures/e9.jfif",
+                    "project/pictures/e10.jfif",
+                    "project/pictures/e11.jfif",
+                    "project/pictures/e12.jfif",
+                    "project/pictures/e13.jfif",
+                    "project/pictures/e14.jfif",
+                    "project/pictures/e15.jfif",
+                    "project/pictures/e16.jfif",
+                    "project/pictures/e17.jfif",
+                    "project/pictures/e18.jfif",
+                    "project/pictures/e19.jfif",
+                    "project/pictures/e20.jfif",
+                    "project/pictures/e21.jfif",
+                    "project/pictures/e22.jfif",
+                    "project/pictures/e23.jfif",
+                    "project/pictures/e24.jfif",
+                ]
+            },
+            {
+                author: "@медеников",
+                text: "знаешь как говорят? мы сами кузнецы своего счастья,так вот,я хочу построить свое счастье именно с тобой.",
+                likes: 512,
+                photos: [
+                    "project/moments/b1.png",
+                    "project/moments/b2.png",
+                    "project/moments/b3.png",
+                    "project/moments/b4.png",
+                    "project/moments/b5.png",
+                    "project/moments/b6.png",
+                    "project/moments/b7.png",
+                    "project/moments/b8.png",
+                    "project/moments/b9.png",
+                    "project/moments/b10.png",
+                    "project/moments/b11.png",
+                    "project/moments/b12.png",
+                    "project/moments/b13.png",
+                    "project/moments/b14.png",
+                    "project/moments/b15.png",
+                    "project/moments/b16.png",
+                    "project/moments/b17.png",
+                    "project/moments/b18.png",
+                    "project/moments/b19.png",
+                    "project/moments/b20.png",
+                    "project/moments/b21.png",
+                    "project/moments/b22.png",
+                    "project/moments/b23.png",
+                    "project/moments/b24.png",
+                    "project/moments/b25.png",
+                ]
+            },
+            {
+                author: "@Ники_любимн❤",
+                text: "именно эти,казалось бы,мелочи, укрепляют наши с тобой отношения.",
+                likes: 512,
+                photos: [
+                    "project/random_pictures/f.jfif",
+                    "project/random_pictures/f1.jfif",
+                    "project/random_pictures/f2.jfif",
+                    "project/random_pictures/f3.jfif",
+                    "project/random_pictures/f4.jfif",
+                    "project/random_pictures/f5.jfif",
+                    "project/random_pictures/f6.jfif",
+                    "project/random_pictures/f7.jfif",
+                    "project/random_pictures/f8.jfif",
+                    "project/random_pictures/f9.jfif",
+                    "project/random_pictures/f10.jfif",
+                    "project/random_pictures/f11.jfif",
+                ]
+            },
+            {
+                author: "@Ники хазяен n.1😎❤",
+                text: "мое самое любимое занятие - быть рядом с тобой",
+                likes: 512,
+                photos: [
+                    "project/calls/a.png",
+                    "project/calls/a1.png",
+                    "project/calls/a2.png",
+                    "project/calls/a3.png",
+                    "project/calls/a4.png",
+                ]
+            },
+            {
+                author: "@никита_и_команда_sos",
+                text: "ну а напоследок вот тебе видеопоздравление)",
+                likes: 2026,
+                video: "project/video/sos.mp4"
+            }
+        ];
+
+        // ==========================================
+        // 2. ПЛЕЙЛИСТЫ (Вставь пути к своим mp3)
+        // ==========================================
+        const musicData = {
+            chill: [
+                { name: "Dance!", url: "project/music/c/2.mp3" },
+                { name: "Full moon full life", url: "project/music/c/1.mp3" },
+                { name: "Color your night", url: "project/music/c/3.mp3" },
+                { name: "Don't", url: "project/music/c/4.mp3" },
+                { name: "Heaven", url: "project/music/c/5.mp3" },
+                { name: "Heartbeat,Heartbreak", url: "project/music/c/6.mp3" },
+            ],
+            fav: [
+                { name: "18 мне уже | Руки Вверх", url: "project/music/f/1.m4a" },
+                { name: "Tearz | PHARAOH", url: "project/music/f/2.mp3" },
+                { name: "Бойсбэнд | PHARAOH", url: "project/music/f/3.m4a" },
+                { name: "Бойчик | ФРЕНДЗОНА", url: "project/music/f/4.m4a" },
+                { name: "Видение | Максим Леонидов", url: "project/music/f/5.mp3" },
+                { name: "Красной помадой | FACE", url: "project/music/f/6.m4a" },
+                { name: "Крошка моя | Руки Вверх", url: "project/music/f/7.m4a" }
+            ]
+        };
+
+        // ==========================================
+        // 3. ГЕНЕРАЦИЯ ЛЕНТЫ И КАРУСЕЛЕЙ
+        // ==========================================
+       const feed = document.getElementById('feed');
+        let pausedMusicByVideo = false;
+
+        // Наблюдатель за экраном: сам ставит музыку на паузу на слайде с видео
+        const videoObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                if (!video) return;
+
+                if (entry.isIntersecting) {
+                    if (!audio.paused) {
+                        audio.pause();
+                        pausedMusicByVideo = true;
+                        setVinylState(false);
+                        document.getElementById('btn-play').innerText = "⏯";
+                    }
+                    video.play().catch(() => {});
+                } else {
+                    video.pause();
+                    if (pausedMusicByVideo) {
+                        pausedMusicByVideo = false;
+                        audio.play().catch(() => {});
+                        setVinylState(true);
+                        document.getElementById('btn-play').innerText = "⏸";
+                    }
+                }
+            });
+        }, { root: feed, threshold: 0.65 });
+
+        function renderSlides() {
+            feed.innerHTML = '';
+
+            slides.forEach((slide) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                const isVideo = Boolean(slide.video);
+                const photos = slide.photos || [];
+                const isCarousel = !isVideo && photos.length > 1;
+                const dotCount = Math.min(photos.length, 3); // Максимум 3 точки ("жонглирование")
+
+                let mediaHtml = '';
+                let controlsHtml = '';
+
+                if (isVideo) {
+                    mediaHtml = `
+                        <div class="video-slide">
+                            <video src="${slide.video}" playsinline preload="metadata"></video>
+                            <button class="video-play-btn" aria-label="Включить видео">▶</button>
+                        </div>
+                    `;
+                } else {
+                    const photosHtml = photos.map(url => `
+                        <div class="carousel-slide">
+                            <div class="blur-bg" style="background-image: url('${url}')"></div>
+                            <img src="${url}" alt="memory" loading="lazy">
+                        </div>
+                    `).join('');
+
+                    mediaHtml = `<div class="carousel">${photosHtml}</div>`;
+
+                    if (isCarousel) {
+                        controlsHtml = `
+                            <div class="carousel-counter">1 / ${photos.length}</div>
+                            <div class="carousel-dots">
+                                ${Array.from({ length: dotCount }, (_, idx) => `<div class="dot ${idx === 0 ? 'active' : ''}"></div>`).join('')}
+                            </div>
+                            <button class="nav-arrow prev" aria-label="Назад">‹</button>
+                            <button class="nav-arrow next" aria-label="Вперед">›</button>
+                        `;
+                    }
+                }
+
+                card.innerHTML = `
+                    ${mediaHtml}
+                    <div class="card-gradient"></div>
+                    ${controlsHtml}
+                    <div class="post-info">
+                        <div class="post-author">${slide.author}</div>
+                        <div class="post-text">${slide.text}</div>
+                    </div>
+                    <div class="sidebar">
+                        <button class="sidebar-btn">
+                            <div class="icon-circle">🤍</div>
+                            <span class="btn-label">${slide.likes}</span>
+                        </button>
+                        <div class="vinyl-disc paused">🎵</div>
+                    </div>
+                `;
+
+                // Лайки
+                const likeBtn = card.querySelector('.sidebar-btn');
+                likeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleLike(likeBtn);
+                    createHeart(e.clientX, e.clientY);
+                });
+
+// Видео: 1 тап = пауза/плей, 2 тапа = полный экран
+             if (isVideo) {
+                 const video = card.querySelector('video');
+                 const playOverlay = card.querySelector('.video-play-btn');
+
+                 let videoTapTimer = null;
+                 let lastVideoTouch = 0;
+
+                 const handleVideoTap = () => {
+                     if (videoTapTimer) {
+                         clearTimeout(videoTapTimer);
+                         videoTapTimer = null;
+                         if (document.fullscreenElement) {
+                             document.exitFullscreen().catch(() => {});
+                         } else if (video.requestFullscreen) {
+                             video.requestFullscreen().catch(() => {});
+                         } else if (video.webkitEnterFullscreen) {
+                             video.webkitEnterFullscreen();
+                         }
+                     } else {
+                         videoTapTimer = setTimeout(() => {
+                             videoTapTimer = null;
+                             if (video.paused) {
+                                 video.play().catch(() => {});
+                             } else {
+                                 video.pause();
+                             }
+                         }, 220);
+                     }
+                 };
+
+                 video.addEventListener('touchend', (e) => {
+                     lastVideoTouch = Date.now();
+                     handleVideoTap();
+                 });
+
+                 video.addEventListener('click', (e) => {
+                     e.stopPropagation();
+                     if (Date.now() - lastVideoTouch < 500) return;
+                     handleVideoTap();
+                 });
+
+                 video.addEventListener('play', () => {
+                     playOverlay.classList.add('hidden');
+                     if (!audio.paused) {
+                         audio.pause();
+                         pausedMusicByVideo = true;
+                         setVinylState(false);
+                         document.getElementById('btn-play').innerText = "⏯";
+                     }
+                 });
+
+                 video.addEventListener('pause', () => {
+                     playOverlay.classList.remove('hidden');
+                 });
+
+                 videoObserver.observe(card);
+             }
+
+                // Карусель с 3 точками по кругу (idx % 3)
+                if (isCarousel) {
+                    const carousel = card.querySelector('.carousel');
+                    const counter = card.querySelector('.carousel-counter');
+                    const dots = card.querySelectorAll('.dot');
+                    const prevBtn = card.querySelector('.prev');
+                    const nextBtn = card.querySelector('.next');
+
+                    const updateCarouselUI = () => {
+                        const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+                        counter.innerText = `${idx + 1} / ${photos.length}`;
+                        const activeDot = idx % dotCount; // 0, 1, 2 -> снова 0!
+                        dots.forEach((d, i) => d.classList.toggle('active', i === activeDot));
+                    };
+
+                    carousel.addEventListener('scroll', updateCarouselUI, { passive: true });
+
+                    prevBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+                        const target = Math.max(0, idx - 1);
+                        carousel.scrollTo({ left: target * carousel.clientWidth, behavior: 'smooth' });
+                    });
+
+                    nextBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+                        const target = Math.min(photos.length - 1, idx + 1);
+                        carousel.scrollTo({ left: target * carousel.clientWidth, behavior: 'smooth' });
+                    });
+                }
+
+                feed.appendChild(card);
+            });
+        }
+
+        renderSlides();
+        // ==========================================
+        // 4. АУДИОПЛЕЕР
+        // ==========================================
+        let currentGenre = 'chill';
+        let trackIndex = 0;
+        const audio = document.getElementById('audio');
+
+        audio.addEventListener('ended', nextTrack);
+
+        function updateTrackUI() {
+            const currentTrack = musicData[currentGenre][trackIndex];
+            document.getElementById('track-title').innerText = currentTrack.name;
+            audio.src = currentTrack.url;
+        }
+
+        function unlockSite() {
+            const gate = document.getElementById('start-gate');
+            gate.style.opacity = '0';
+            setTimeout(() => gate.style.visibility = 'hidden', 800);
+
+            updateTrackUI();
+            audio.play().catch(() => {});
+            setVinylState(true);
+        }
+
+        function setPlaylist(genre) {
+            currentGenre = genre;
+            trackIndex = 0;
+            document.getElementById('tab-chill').classList.toggle('active', genre === 'chill');
+            document.getElementById('tab-fav').classList.toggle('active', genre === 'fav');
+
+            updateTrackUI();
+            audio.play().catch(() => {});
+            setVinylState(true);
+            document.getElementById('btn-play').innerText = "⏸";
+        }
+
+        function togglePlay() {
+            if (audio.paused) {
+                document.querySelectorAll('video').forEach(v => v.pause());
+                pausedMusicByVideo = false;
+                audio.play().catch(() => {});
+                document.getElementById('btn-play').innerText = "⏸";
+                setVinylState(true);
+            } else {
+                audio.pause();
+                document.getElementById('btn-play').innerText = "⏯";
+                setVinylState(false);
+            }
+        }
+
+        function nextTrack() {
+            trackIndex = (trackIndex + 1) % musicData[currentGenre].length;
+            updateTrackUI();
+            audio.play().catch(() => {});
+            setVinylState(true);
+            document.getElementById('btn-play').innerText = "⏸";
+        }
+
+        function prevTrack() {
+            const len = musicData[currentGenre].length;
+            trackIndex = (trackIndex - 1 + len) % len;
+            updateTrackUI();
+            audio.play().catch(() => {});
+            setVinylState(true);
+            document.getElementById('btn-play').innerText = "⏸";
+        }
+
+        function setVinylState(isPlaying) {
+            document.querySelectorAll('.vinyl-disc').forEach(v => {
+                v.classList.toggle('paused', !isPlaying);
+            });
+        }
+
+        // ==========================================
+        // 5. ЛАЙКИ И ДВОЙНОЙ ТАП (ПК + ТЕЛЕФОН)
+        // ==========================================
+        function toggleLike(btn) {
+            const icon = btn.querySelector('.icon-circle');
+            const label = btn.querySelector('.btn-label');
+            const current = parseInt(label.innerText, 10) || 0;
+            
+            icon.innerText = '❤️';
+            label.innerText = current + 1;
+
+        }
+
+
+
+        function createHeart(x, y) {
+            const heart = document.createElement('div');
+            heart.classList.add('floating-heart');
+            heart.innerHTML = '❤️';
+            heart.style.left = x + 'px';
+            heart.style.top = y + 'px';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 800);
+        }
+
+        function likeCurrentCard() {
+            const cardIdx = Math.round(feed.scrollTop / feed.clientHeight);
+            const card = feed.children[cardIdx];
+            if (card) {
+                const btn = card.querySelector('.sidebar-btn');
+                if (btn) toggleLike(btn, false);
+            }
+        }
+
+// Быстрые тапы без кулдауна (ПК + телефон)
+        let lastLikeTapTime = 0;
+        let ignoreMouseClickUntil = 0;
+
+        function handleBurstTap(x, y, target) {
+            if (target.closest('button, video, .player-bar, .nav-arrow')) return;
+            const now = Date.now();
+            if (now - lastLikeTapTime < 450) {
+                createHeart(x, y);
+                likeCurrentCard();
+            }
+            lastLikeTapTime = now;
+        }
+
+        feed.addEventListener('touchend', (e) => {
+            ignoreMouseClickUntil = Date.now() + 500;
+            const touch = e.changedTouches[0];
+            handleBurstTap(touch.clientX, touch.clientY, e.target);
+        });
+
+        feed.addEventListener('click', (e) => {
+            if (Date.now() < ignoreMouseClickUntil) return;
+            handleBurstTap(e.clientX, e.clientY, e.target);
+        });
+
+        // Управление стрелками на ПК для удобного теста
+        document.addEventListener('keydown', (e) => {
+            const cardIdx = Math.round(feed.scrollTop / feed.clientHeight);
+            const currentCard = feed.children[cardIdx];
+            if (!currentCard) return;
+
+            if (e.key === 'ArrowDown') {
+                feed.scrollTo({ top: (cardIdx + 1) * feed.clientHeight, behavior: 'smooth' });
+            } else if (e.key === 'ArrowUp') {
+                feed.scrollTo({ top: Math.max(0, cardIdx - 1) * feed.clientHeight, behavior: 'smooth' });
+            } else if (e.key === 'ArrowRight') {
+                const c = currentCard.querySelector('.carousel');
+                if (c) c.scrollBy({ left: c.clientWidth, behavior: 'smooth' });
+            } else if (e.key === 'ArrowLeft') {
+                const c = currentCard.querySelector('.carousel');
+                if (c) c.scrollBy({ left: -c.clientWidth, behavior: 'smooth' });
+            }
+        });
+
+        // ==========================================
+        // 6. ЛЕГКИЙ ЗИМНИЙ СНЕГ
+        // ==========================================
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas.getContext('2d');
+        let snowflakes = [];
+
+        function resizeSnow() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeSnow);
+        resizeSnow();
+
+        for (let i = 0; i < 28; i++) {
+            snowflakes.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 2.2 + 0.8,
+                speedY: Math.random() * 0.8 + 0.3,
+                speedX: Math.random() * 0.4 - 0.2,
+                alpha: Math.random() * 0.5 + 0.2
+            });
+        }
+
+        function animateSnow() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const f of snowflakes) {
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${f.alpha})`;
+                ctx.fill();
+
+                f.y += f.speedY;
+                f.x += f.speedX;
+                if (f.y > canvas.height) {
+                    f.y = -5;
+                    f.x = Math.random() * canvas.width;
+                }
+            }
+            requestAnimationFrame(animateSnow);
+        }
+        animateSnow();
+    </script>
+</body>
+</html>
