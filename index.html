@@ -855,14 +855,14 @@
                     prevBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-                        const target = Math.max(0, idx - 1);
+                        const target = (idx - 1 + photos.length) % photos.length;
                         carousel.scrollTo({ left: target * carousel.clientWidth, behavior: 'smooth' });
                     });
 
                     nextBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-                        const target = Math.min(photos.length - 1, idx + 1);
+                        const target = (idx + 1) % photos.length;
                         carousel.scrollTo({ left: target * carousel.clientWidth, behavior: 'smooth' });
                     });
                 }
