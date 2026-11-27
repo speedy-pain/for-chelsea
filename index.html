@@ -697,6 +697,7 @@
                     video.play().catch(() => {});
                 } else {
                     video.pause();
+                    if (video.readyState > 0) video.currentTime = 0;
                     if (pausedMusicByVideo) {
                         pausedMusicByVideo = false;
                         audio.play().catch(() => {});
@@ -706,7 +707,17 @@
                 }
             });
         }, { root: feed, threshold: 0.65 });
-
+          // Сброс карусели на 1-ю фотку, когда слайд полностью уходит с экрана
+        const carouselResetObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    const carousel = entry.target.querySelector('.carousel');
+                    if (carousel && carousel.scrollLeft !== 0) {
+                        carousel.scrollLeft = 0;
+                    }
+                }
+            });
+        }, { root: feed, threshold: 0.05 });
         function renderSlides() {
             feed.innerHTML = '';
 
@@ -842,7 +853,7 @@
                     const dots = card.querySelectorAll('.dot');
                     const prevBtn = card.querySelector('.prev');
                     const nextBtn = card.querySelector('.next');
-
+                    carouselResetObserver.observe(card);
                     const updateCarouselUI = () => {
                         const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
                         counter.innerText = `${idx + 1} / ${photos.length}`;
