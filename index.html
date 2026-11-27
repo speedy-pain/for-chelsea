@@ -190,7 +190,6 @@
             overflow-y: hidden;
             scroll-snap-type: x mandatory;
             scrollbar-width: none;
-            touch-action: pan-x pan-y;
             overscroll-behavior: none;
      }
 
@@ -1082,6 +1081,26 @@
             requestAnimationFrame(animateSnow);
         }
         animateSnow();
+        // Плавное перелистывание постов колесиком мыши на ПК
+        let isWheelScrolling = false;
+        feed.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+            if (Math.abs(e.deltaY) < 10) return;
+
+            e.preventDefault();
+            if (isWheelScrolling) return;
+
+            const cardIdx = Math.round(feed.scrollTop / feed.clientHeight);
+            const nextIdx = e.deltaY > 0
+                ? Math.min(slides.length - 1, cardIdx + 1)
+                : Math.max(0, cardIdx - 1);
+
+            if (nextIdx !== cardIdx) {
+                isWheelScrolling = true;
+                feed.scrollTo({ top: nextIdx * feed.clientHeight, behavior: 'smooth' });
+                setTimeout(() => { isWheelScrolling = false; }, 450);
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
