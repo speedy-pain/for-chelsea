@@ -168,9 +168,8 @@
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
-            overscroll-behavior: none;
+            overscroll-behavior-y: contain;
         }
-
         .card {
             height: 100dvh;
             width: 100vw;
@@ -190,8 +189,9 @@
             overflow-y: hidden;
             scroll-snap-type: x mandatory;
             scrollbar-width: none;
-            overscroll-behavior: none;
-     }
+            touch-action: pan-x pan-y;
+            overscroll-behavior-x: contain;
+        }
 
 
         .carousel-slide {
