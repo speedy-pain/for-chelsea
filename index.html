@@ -182,6 +182,8 @@
 
         /* 4. ГОРИЗОНТАЛЬНАЯ КАРУСЕЛЬ ВНУТРИ КАРТОЧКИ */
         .carousel {
+            position: relative;
+            z-index: 1;
             display: flex;
             width: 100%;
             height: 100%;
@@ -743,15 +745,17 @@
                             <button class="video-play-btn" aria-label="Включить видео">▶</button>
                         </div>
                     `;
-                } else {
-                    const photosHtml = photos.map(url => `
-                        <div class="carousel-slide">
-                            <div class="blur-bg" style="background-image: url('${url}')"></div>
-                            <img src="${url}" alt="memory" loading="lazy">
-                        </div>
-                    `).join('');
+            } else {
+                 const photosHtml = photos.map(url => `
+                     <div class="carousel-slide">
+                         <img src="${url}" alt="memory" loading="lazy" decoding="async">
+                     </div>
+                 `).join('');
 
-                    mediaHtml = `<div class="carousel">${photosHtml}</div>`;
+                 mediaHtml = `
+                     <div class="blur-bg" style="background-image: url('${photos[0]}')"></div>
+                     <div class="carousel">${photosHtml}</div>
+                 `;
 
                     if (isCarousel) {
                         controlsHtml = `
@@ -857,12 +861,14 @@
                     const prevBtn = card.querySelector('.prev');
                     const nextBtn = card.querySelector('.next');
                     carouselResetObserver.observe(card);
+                    const blurBg = card.querySelector('.blur-bg');
                     const updateCarouselUI = () => {
-                        const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-                        counter.innerText = `${idx + 1} / ${photos.length}`;
-                        const activeDot = idx % dotCount; // 0, 1, 2 -> снова 0!
-                        dots.forEach((d, i) => d.classList.toggle('active', i === activeDot));
-                    };
+                     const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+                     counter.innerText = `${idx + 1} / ${photos.length}`;
+                     const activeDot = idx % dotCount; // 0, 1, 2 -> снова 0!
+                     dots.forEach((d, i) => d.classList.toggle('active', i === activeDot));
+                     if (blurBg) blurBg.style.backgroundImage = `url('${photos[idx]}')`;
+                 };
 
                     carousel.addEventListener('scroll', updateCarouselUI, { passive: true });
 
