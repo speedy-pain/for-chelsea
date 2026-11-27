@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+<audio id="audio" preload="auto"></audio>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -48,7 +49,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.8s ease, visibility 0.8s;
+            transition: opacity 0.45s ease, visibility 0.45s;
             text-align: center;
             padding: 20px;
         }
@@ -218,8 +219,8 @@
             background-position: center;
             filter: blur(22px) brightness(0.42);
             z-index: 0;
-        }
-
+            transition: background-image 0.45s ease;
+     }
         .carousel-slide img {
             position: relative;
             z-index: 1;
@@ -726,7 +727,7 @@
         function renderSlides() {
             feed.innerHTML = '';
 
-            slides.forEach((slide) => {
+            slides.forEach((slide, slideIdx) => {
                 const card = document.createElement('div');
                 card.className = 'card';
 
@@ -746,11 +747,14 @@
                         </div>
                     `;
             } else {
-                 const photosHtml = photos.map(url => `
-                     <div class="carousel-slide">
-                         <img src="${url}" alt="memory" loading="lazy" decoding="async">
-                     </div>
-                 `).join('');
+                 const photosHtml = photos.map((url, photoIdx) => {
+                     const loadMode = (slideIdx === 0 && photoIdx < 3) ? 'eager' : 'lazy';
+                     return `
+                         <div class="carousel-slide">
+                             <img src="${url}" alt="memory" loading="${loadMode}" decoding="async">
+                         </div>
+                     `;
+                 }).join('');
 
                  mediaHtml = `
                      <div class="blur-bg" style="background-image: url('${photos[0]}')"></div>
@@ -862,10 +866,13 @@
                     const nextBtn = card.querySelector('.next');
                     carouselResetObserver.observe(card);
                     const blurBg = card.querySelector('.blur-bg');
+                    let currentIdx = 0;
                     const updateCarouselUI = () => {
                      const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+                     if (idx === currentIdx) return;
+                     currentIdx = idx;
                      counter.innerText = `${idx + 1} / ${photos.length}`;
-                     const activeDot = idx % dotCount; // 0, 1, 2 -> снова 0!
+                     const activeDot = idx % dotCount;
                      dots.forEach((d, i) => d.classList.toggle('active', i === activeDot));
                      if (blurBg) blurBg.style.backgroundImage = `url('${photos[idx]}')`;
                  };
@@ -900,6 +907,7 @@
         const audio = document.getElementById('audio');
 
         audio.addEventListener('ended', nextTrack);
+            updateTrackUI();
 
         function updateTrackUI() {
             const currentTrack = musicData[currentGenre][trackIndex];
@@ -907,15 +915,15 @@
             audio.src = currentTrack.url;
         }
 
-        function unlockSite() {
-            const gate = document.getElementById('start-gate');
-            gate.style.opacity = '0';
-            setTimeout(() => gate.style.visibility = 'hidden', 800);
+     function unlockSite() {
+         const gate = document.getElementById('start-gate');
+         gate.style.pointerEvents = 'none';
+         gate.style.opacity = '0';
+         setTimeout(() => gate.style.visibility = 'hidden', 450);
 
-            updateTrackUI();
-            audio.play().catch(() => {});
-            setVinylState(true);
-        }
+         audio.play().catch(() => {});
+         setVinylState(true);
+     }
 
         function setPlaylist(genre) {
             currentGenre = genre;
